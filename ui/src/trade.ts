@@ -17,9 +17,6 @@ import {
 } from "./uiConfig";
 import {
     addIconSprite,
-    createDockRail,
-    createDockSlot,
-    createDockSideRail,
 } from "./uiDock";
 import {
     clampSpanWithinBounds,
@@ -119,7 +116,7 @@ function decorateTradeEditorWindow(
 ) {
     const editor = getTradeConfig().editor;
     const hasRailIcon = Boolean(options?.icon);
-    tradeWindow.contentInsetLeft = hasRailIcon ? editor.contentInsetLeft : 10;
+    tradeWindow.contentInsetLeft = hasRailIcon ? editor.contentInsetLeft : 12;
 
     const defaultBg = tradeWindow.container.children[0];
     if (defaultBg) {
@@ -132,24 +129,34 @@ function decorateTradeEditorWindow(
 
     const chrome = new PIXI.Container();
     chrome.name = "trade-editor-chrome";
-    chrome.addChild(
-        createDockRail({
-            width: tradeWindow.container.width,
-            height: editor.windowHeight,
-        }),
+    const panel = new PIXI.Graphics();
+    panel.lineStyle({
+        color: editor.surfaceBorder,
+        width: editor.surfaceBorderWidth,
+    });
+    panel.beginFill(editor.surfaceFill, 0.98);
+    panel.drawRoundedRect(
+        0,
+        0,
+        tradeWindow.container.width,
+        editor.windowHeight,
+        8,
     );
-    if (hasRailIcon) {
-        chrome.addChild(
-            createDockSideRail({
-                width: editor.railWidth,
-                height: editor.windowHeight,
-            }),
-        );
+    panel.endFill();
+    chrome.addChild(panel);
+
+    if (hasRailIcon && options?.secondaryIcon) {
+        const guide = new PIXI.Graphics();
+        guide.beginFill(editor.railFill, 0.22);
+        guide.drawRoundedRect(8, 8, editor.railWidth - 16, editor.windowHeight - 16, 8);
+        guide.endFill();
+        chrome.addChild(guide);
     }
 
     const addIcon = (
         asset: assets.AssetImage,
-        centerY: number,
+        x: number,
+        y: number,
         rotation = 0,
         tint?: number,
     ) => {
@@ -157,8 +164,8 @@ function decorateTradeEditorWindow(
             asset,
             width: editor.iconSize,
             height: editor.iconSize,
-            x: (editor.railWidth - editor.iconSize) / 2,
-            y: centerY - editor.iconSize / 2,
+            x,
+            y,
         });
         iconSprite.anchor.set(0.5);
         iconSprite.x += editor.iconSize / 2;
@@ -170,21 +177,28 @@ function decorateTradeEditorWindow(
     };
 
     if (options?.icon && options.secondaryIcon) {
+        const markerY = Math.round((editor.windowHeight - editor.iconSize) / 2);
+        const iconX = 16;
+        const arrowX = iconX + editor.iconSize + 12;
         addIcon(
             options.icon,
-            editor.windowHeight / 2 - editor.iconSize * 0.45,
+            iconX,
+            markerY,
             0,
             options.iconTint,
         );
         addIcon(
             options.secondaryIcon,
-            editor.windowHeight / 2 + editor.iconSize * 0.55,
+            arrowX,
+            markerY,
             options.secondaryRotation ?? 0,
         );
     } else if (options?.icon) {
+        const markerY = Math.round((editor.windowHeight - editor.iconSize) / 2);
         addIcon(
             options.icon,
-            editor.windowHeight / 2,
+            20,
+            markerY,
             options.iconRotation ?? 0,
             options.iconTint,
         );
@@ -195,29 +209,48 @@ function decorateTradeEditorWindow(
 
 function makeTradeActionButton(options: {
     icon: assets.AssetImage;
+    x: number;
     y: number;
     fill: number;
+    border: number;
+    showCheck?: boolean;
     onPress: () => void;
 }) {
     const button = new PIXI.Container();
-    button.x = 6;
+    button.x = options.x;
     button.y = options.y;
     button.interactive = true;
     button.cursor = "pointer";
 
     const chip = new PIXI.Graphics();
-    chip.beginFill(options.fill);
-    chip.drawRoundedRect(0, 0, 44, 44, 12);
+    chip.lineStyle({ color: options.border, width: 2 });
+    chip.beginFill(options.fill, 0.98);
+    chip.drawRoundedRect(0, 0, 48, 48, 12);
     chip.endFill();
     button.addChild(chip);
 
     addIconSprite(button, {
         asset: options.icon,
-        width: 24,
-        height: 24,
-        x: 10,
-        y: 10,
+        width: 26,
+        height: 26,
+        x: 11,
+        y: 11,
     });
+
+    if (options.showCheck) {
+        const badge = new PIXI.Graphics();
+        badge.beginFill(0x22c55e);
+        badge.drawCircle(39, 9, 7);
+        badge.endFill();
+        button.addChild(badge);
+
+        const check = new PIXI.Graphics();
+        check.lineStyle({ color: 0xffffff, width: 2.2 });
+        check.moveTo(36, 9);
+        check.lineTo(38.5, 11.5);
+        check.lineTo(42.5, 7.5);
+        button.addChild(check);
+    }
 
     let enabled = true;
     button.on("pointerdown", () => {
@@ -231,7 +264,7 @@ function makeTradeActionButton(options: {
         container: button,
         setEnabled(next: boolean) {
             enabled = next;
-            button.alpha = next ? 1 : 0.45;
+            button.alpha = next ? 1 : 0.42;
             button.interactive = next;
             button.cursor = next ? "pointer" : "default";
         },
@@ -240,43 +273,42 @@ function makeTradeActionButton(options: {
 
 function createTradeActionRail() {
     const editor = getTradeConfig().editor;
-    const slotSize = 44;
+    const slotSize = 48;
     const railHeight = slotSize * 3 + editor.rowGap * 2 + 12;
+    const railWidth = editor.actionRailWidth;
+    const buttonX = Math.max(6, Math.round((railWidth - slotSize) / 2));
     const rail = new PIXI.Container();
     rail.zIndex = 1400;
-    rail.addChild(
-        createDockRail({
-            width: 56,
-            height: railHeight,
-        }),
-    );
-    [0, 1, 2].forEach((index) => {
-        rail.addChild(
-            createDockSlot({
-                x: 6,
-                y: 6 + index * (slotSize + editor.rowGap),
-                width: slotSize,
-                height: slotSize,
-            }),
-        );
-    });
-
+    const shell = new PIXI.Graphics();
+    shell.lineStyle({ color: 0x0f79c8, width: 2 });
+    shell.beginFill(0xe8f6ff, 0.96);
+    shell.drawRoundedRect(0, 0, railWidth, railHeight, 16);
+    shell.endFill();
+    rail.addChild(shell);
     const bank = makeTradeActionButton({
         icon: assets.uiKit.bank,
+        x: buttonX,
         y: 6,
-        fill: 0x8ddf8e,
+        fill: 0xb6ebff,
+        border: 0x6fb7dc,
+        showCheck: true,
         onPress: () => makeOffer("bank"),
     });
     const player = makeTradeActionButton({
         icon: assets.uiKit.players,
+        x: buttonX,
         y: 6 + slotSize + editor.rowGap,
-        fill: 0x8fd6eb,
+        fill: 0xb6ebff,
+        border: 0x6fb7dc,
+        showCheck: true,
         onPress: () => makeOffer("player"),
     });
     const cancel = makeTradeActionButton({
         icon: assets.uiKit.x,
+        x: buttonX,
         y: 6 + 2 * (slotSize + editor.rowGap),
-        fill: 0x31bed4,
+        fill: 0x2dc4df,
+        border: 0x1a93ac,
         onPress: clearOfferEditor,
     });
 
@@ -286,7 +318,7 @@ function createTradeActionRail() {
 
     return {
         container: rail,
-        width: 56,
+        width: railWidth,
         height: railHeight,
         bank,
         player,
@@ -393,7 +425,7 @@ export function initialize() {
     possibleAskWindow.container.visible = false;
     possibleAskWindow.clickCallback = addToCurrentAsk;
     possibleAskWindow.setCards([0, 1, 1, 1, 1, 1, isCK_1, isCK_1, isCK_1]);
-    possibleAskWindow.showRatios();
+    possibleAskWindow.hideRatios();
     possibleAskWindow.noRatioStride = true;
     possibleAskWindow.interactive = true;
 
@@ -914,7 +946,7 @@ export function closeTradeOffer() {
     possibleAskWindow?.setClickableCardTypes();
     possibleAskWindow?.setCards([0, 1, 1, 1, 1, 1, isCK_1, isCK_1, isCK_1]);
     possibleAskWindow?.setDevelopmentCards(new Array(31).fill(0));
-    possibleAskWindow?.showRatios();
+    possibleAskWindow?.hideRatios();
     possibleAskWindow?.render();
 
     askWindow?.setDevelopmentCards(new Array(31).fill(0));

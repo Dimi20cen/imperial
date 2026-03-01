@@ -74,6 +74,7 @@ npm run dev
 - Player panel sizing/scaling, hand height, action-bar button geometry, trade/editor windows, setup-choice overlays, settings details, game-over layout, shared yes/no dialogs, tooltips, and error modals all resolve through `ui/src/uiConfig/` selectors now.
 - Trade editor controls now use a dedicated 3-button action rail in `ui/src/trade.ts`: top submits a bank trade, middle submits a co-player trade offer, and bottom clears/cancels the current draft. The bank button is disabled unless the current draft satisfies bank-trade ratio/exchange validity.
 - Trade editor lanes use semantic left markers: top lane has no marker, middle lane shows only a green down arrow, and bottom lane shows only a red up arrow.
+- Trade editor lane surfaces and action rail use a light board-style treatment (pale lane fill + blue borders) configured through `ui/src/uiConfig/sections/trade.ts` (`surfaceFill`, `surfaceBorder`, `surfaceBorderWidth`, `railFill`, `actionRailWidth`).
 - `ui/src/uiConfig/` exposes named presets via `initializeUIConfig({ preset, overrides })` for `default`, `compact`, and `mobileLandscape`.
 - Shared dock/panel primitives now live in `ui/src/uiDock.ts`; use those before introducing new custom Pixi chrome for the hand, trade rows, action dock, timer, dice, or right-rail panels.
 - When adjusting HUD spacing or panel sizes, prefer editing `ui/src/uiConfig/sections/*`, `ui/src/uiConfig/presets.ts`, or `ui/src/hud/layoutEngine.ts` first and only change module code when behavior or rendering needs to change.

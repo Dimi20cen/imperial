@@ -276,6 +276,7 @@ export type UIConfig = {
             surfaceBorderWidth: number;
             railFill: number;
             actionRailGap: number;
+            actionRailWidth: number;
         };
         offers: {
             laneRightOffset: number;

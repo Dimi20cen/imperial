@@ -185,7 +185,7 @@ test("default trade editor fits before the action bar", () => {
     const handLeft = config.hud.bottomRail.leftInset;
     const actionBarX =
         handLeft + computeDefaultHandWidth() + config.hud.bottomRail.gap;
-    const actionRailWidth = Math.max(48, config.windows.yesNo.width);
+    const actionRailWidth = config.trade.editor.actionRailWidth;
     const editorRightEdge =
         handLeft +
         config.trade.editor.offerWidth +
@@ -282,7 +282,7 @@ test("trade editor fits before the action bar for every supported preset", () =>
         const handLeft = config.hud.bottomRail.leftInset;
         const actionBarX =
             handLeft + computeHandWidthForConfig() + config.hud.bottomRail.gap;
-        const actionRailWidth = Math.max(48, config.windows.yesNo.width);
+        const actionRailWidth = getTradeEditorConfig().actionRailWidth;
         const editorRightEdge =
             handLeft +
             getTradeEditorConfig().offerWidth +
