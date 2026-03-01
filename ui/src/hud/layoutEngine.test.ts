@@ -10,6 +10,7 @@ import { buildHUDLayout, computeHandWidthForViewport } from "./layoutEngine.ts";
 
 test("layout engine stacks right rail widgets in order", () => {
     resetUIConfig();
+    const hud = getHudConfig();
 
     const layout = buildHUDLayout({
         canvasWidth: 1600,
@@ -17,14 +18,14 @@ test("layout engine stacks right rail widgets in order", () => {
         playerCount: 4,
     });
 
-    assert.equal(layout.widgets.gameLog!.y, 4);
+    assert.equal(layout.widgets.gameLog!.y, hud.rightRail.topInset);
     assert.equal(
         layout.widgets.chatLane!.y,
-        layout.widgets.gameLog!.y + layout.widgets.gameLog!.height + 8,
+        layout.widgets.gameLog!.y + layout.widgets.gameLog!.height + hud.gap,
     );
     assert.equal(
         layout.widgets.resourceBank!.y,
-        layout.widgets.chatLane!.y + layout.widgets.chatLane!.height + 8,
+        layout.widgets.chatLane!.y + layout.widgets.chatLane!.height + hud.gap,
     );
 });
 

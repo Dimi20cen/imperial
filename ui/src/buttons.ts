@@ -113,8 +113,11 @@ function createDockBackground(
     height: number,
     slotIndexes: number[],
     accentSlotIndex?: number,
+    includeRail = false,
 ) {
-    const container = createDockRail({ width, height });
+    const container = includeRail
+        ? createDockRail({ width, height })
+        : new PIXI.Container();
     const inset = getButtonInset();
     const buttonWidth = getButtonWidth();
 
@@ -452,6 +455,7 @@ export function getButtonSprite(
         (playerPieceButton || devCardButton
             ? width
             : (width / simg.width) * simg.height);
+    outer.hitArea = new PIXI.RoundedRectangle(0, 0, width, h, Math.max(6, width / 10));
 
     const drawShape = (g: PIXI.Graphics) => {
         switch (mask) {
@@ -639,7 +643,13 @@ export function render(commandHub: CommandHub) {
         };
 
     container.addChild(
-        createDockBackground(actionBarWidth(), getActionBarHeight(), [0, 1, 2, 3, 4], 4),
+        createDockBackground(
+            actionBarWidth(),
+            getActionBarHeight(),
+            [0, 1, 2, 3, 4],
+            4,
+            false,
+        ),
     );
     const actionBarPos = computeActionBarPosition({
         canvasWidth: canvas.getWidth(),

@@ -89,7 +89,7 @@ function rerender() {
 
     visible.forEach((entry, idx) => {
         const row = new PIXI.Container();
-        row.y = idx * 20;
+        row.y = idx * 22;
 
         const text = new PIXI.Text(entry.text, createPanelBodyTextStyle());
         text.x = 8;
@@ -108,6 +108,12 @@ function rerender() {
                 iconX += 16;
             });
         }
+
+        const divider = new PIXI.Graphics();
+        divider.beginFill(0x8f877a, 0.45);
+        divider.drawRect(8, 19, WIDTH() - 24, 1);
+        divider.endFill();
+        row.addChild(divider);
 
         feed.addChild(row);
     });
