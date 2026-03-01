@@ -100,6 +100,17 @@ export type UIConfig = {
             specialBuildOffsetY: number;
             spectatorsX: number;
             spectatorsY: number;
+            endTurnSlotIndex: number;
+            timerAboveEndTurnGap: number;
+            diceAboveTimerGap: number;
+            statusAboveDiceGap: number;
+            statusWidth: number;
+            statusHeight: number;
+            timerWidth: number;
+            timerHeight: number;
+            statusLeftOfTimerGap: number;
+            shipAboveStatusGap: number;
+            timerRightNudge: number;
         };
     };
     windows: {

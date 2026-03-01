@@ -3,6 +3,7 @@ import * as canvas from "./canvas";
 import * as chat from "./chat";
 import * as dice from "./dice";
 import * as gameLog from "./gameLog";
+import * as gameStatus from "./gameStatus";
 import * as hand from "./hand";
 import * as resourceBank from "./resourceBank";
 import * as state from "./state";
@@ -27,6 +28,7 @@ export function relayoutHUD() {
     resourceBank.setFrame(layout.widgets.resourceBank!);
     trade.relayout();
     chat.applyHUDLayout(layout);
+    gameStatus.setFrame(layout.widgets.gameStatus!);
     gameLog.setFrame(layout.widgets.gameLog!);
     dice.setFrame(layout.widgets.dice!);
     canvas.app.markDirty();

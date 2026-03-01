@@ -69,11 +69,17 @@ npm run dev
 - `ui/src/hud/layoutEngine.ts` is now the authoritative HUD geometry engine. It computes named frames for Pixi widgets and DOM overlays from the resolved UI config plus viewport/runtime context.
 - `ui/src/hud/widgetRegistry.ts` documents the current HUD widget inventory and intended region ownership; keep new HUD elements registered there so the layout surface stays discoverable.
 - `ui/src/hudRelayout.ts` now performs a single HUD layout pass on resize/runtime refresh, then distributes the computed frames to modules like `chat`, `gameLog`, `resourceBank`, `buttons`, `hand`, `dice`, and `state`.
+- `ui/src/gameStatus.ts` renders the live game-phase panel and consumes a dedicated `gameStatus` frame from the shared HUD layout result.
 - `ui/src/hudLayout.ts` remains as a compatibility helper layer for modules that still consume legacy `compute*Position` helpers, but it now delegates to the shared layout engine instead of owning a separate preset.
 - Player panel sizing/scaling, hand height, action-bar button geometry, trade/editor windows, setup-choice overlays, settings details, game-over layout, shared yes/no dialogs, tooltips, and error modals all resolve through `ui/src/uiConfig/` selectors now.
 - `ui/src/uiConfig/` exposes named presets via `initializeUIConfig({ preset, overrides })` for `default`, `compact`, and `mobileLandscape`.
 - Shared dock/panel primitives now live in `ui/src/uiDock.ts`; use those before introducing new custom Pixi chrome for the hand, trade rows, action dock, timer, dice, or right-rail panels.
 - When adjusting HUD spacing or panel sizes, prefer editing `ui/src/uiConfig/sections/*`, `ui/src/uiConfig/presets.ts`, or `ui/src/hud/layoutEngine.ts` first and only change module code when behavior or rendering needs to change.
+- The default hand rail width is capped by `hud.bottomRail.handMaxWidth` (currently `760`) to keep more space available for nearby action clusters.
+- Timer/dice/status placement is config-driven from `ui/src/uiConfig/sections/hud.ts` and currently anchors to the End Turn slot (`timerAboveEndTurnGap`, `diceAboveTimerGap`, `endTurnSlotIndex`, `timerWidth`, `timerHeight`, `statusWidth`, `statusHeight`, `timerRightNudge`), with the status panel positioned to the timer's left.
+- Seafarers ship-action rail placement is now aligned to the left of the status panel and can use the space above the hand rail when needed to avoid collisions with the compact timer/status cluster.
+- The compact timer is now text-only (no mode badge/sub-label), and the dice render without the old dock tray background so the lower-right control cluster can stay tighter.
+- HUD collision guards now keep Seafarers extra actions above the main action bar and keep dice frames left of the player panel.
 - `ui/src/windows.ts` reads the shared window chrome config, so visual restyling of common panels can happen in one place.
 - Put reusable styling primitives in `ui/src/uiConfig/tokens.ts`, semantic section defaults in `ui/src/uiConfig/sections/*`, and shared read accessors in `ui/src/uiConfig/selectors/*`.
 - Feature modules should prefer selectors/helpers over deep object traversal so the config shape can evolve without widespread callsite churn.

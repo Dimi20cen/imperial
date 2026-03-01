@@ -25,13 +25,13 @@ import {
 import {
     getActionBarConfig,
     getBottomDockConfig,
+    getHudMiscConfig,
     getPauseToggleConfig,
 } from "./uiConfig";
 import {
     createDockRail,
     createDockSlot,
     createPanelBodyTextStyle,
-    createPanelCaptionTextStyle,
     createPanelTitleTextStyle,
 } from "./uiDock";
 
@@ -43,7 +43,6 @@ let container1: PIXI.Container;
 let seafarersShipContainer: PIXI.Container | null = null;
 let turnTimerContainer: PIXI.Container | null = null;
 let turnTimerText: PIXI.Text | null = null;
-let turnTimerDebugText: PIXI.Text | null = null;
 let pauseToggleContainer: PIXI.Container | null = null;
 let pauseToggleIcon: PIXI.Graphics | null = null;
 let timerTickerStarted = false;
@@ -150,43 +149,29 @@ function ensureTurnTimerWidget() {
         return;
     }
 
+    const misc = getHudMiscConfig();
+    const timerWidth = misc.timerWidth;
+    const timerHeight = misc.timerHeight;
+
     turnTimerContainer = new PIXI.Container();
     turnTimerContainer.zIndex = 1300;
     const timerBg = new PIXI.Graphics();
     timerBg.lineStyle({ color: 0x0b6c8c, width: 2 });
     timerBg.beginFill(0xf1ead7, 0.98);
-    timerBg.drawRoundedRect(0, 0, 76, 40, 12);
+    timerBg.drawRoundedRect(0, 0, timerWidth, timerHeight, 10);
     timerBg.endFill();
-    const timerStrip = new PIXI.Graphics();
-    timerStrip.beginFill(0x17b6cf, 0.95);
-    timerStrip.drawRoundedRect(4, 4, 18, 32, 10);
-    timerStrip.endFill();
     turnTimerContainer.addChild(timerBg);
-    turnTimerContainer.addChild(timerStrip);
 
     turnTimerText = new PIXI.Text(
         "--:--",
         createPanelTitleTextStyle({
-            fontSize: 16,
+            fontSize: 13,
         }),
     );
     turnTimerText.anchor.set(0.5);
-    turnTimerText.x = 46;
-    turnTimerText.y = 14;
+    turnTimerText.x = Math.round(timerWidth / 2);
+    turnTimerText.y = Math.round(timerHeight / 2);
     turnTimerContainer.addChild(turnTimerText);
-
-    turnTimerDebugText = new PIXI.Text(
-        "",
-        createPanelCaptionTextStyle({
-            fontSize: 9,
-            fill: 0x0b6c8c,
-            align: "center",
-        }),
-    );
-    turnTimerDebugText.anchor.set(0.5);
-    turnTimerDebugText.x = 46;
-    turnTimerDebugText.y = 28;
-    turnTimerContainer.addChild(turnTimerDebugText);
 
     canvas.app.stage.addChild(turnTimerContainer);
 }
@@ -195,8 +180,7 @@ function updateTurnTimerWidget() {
     if (
         !turnTimerContainer ||
         turnTimerContainer.destroyed ||
-        !turnTimerText ||
-        !turnTimerDebugText
+        !turnTimerText
     ) {
         return;
     }
@@ -207,7 +191,6 @@ function updateTurnTimerWidget() {
         computed.displaySeconds === null
             ? "--:--"
             : formatSeconds(computed.displaySeconds);
-    turnTimerDebugText.text = computed.mode;
     canvas.app.markDirty();
 }
 

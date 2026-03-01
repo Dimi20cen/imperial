@@ -11,7 +11,6 @@ import { computeDicePosition } from "./hudLayout";
 import { sound } from "@pixi/sound";
 import { DieRollState } from "../tsg";
 import { getCommandHub } from "./ws";
-import { createDockRail, createDockSlot } from "./uiDock";
 
 let redDiceSprite: PIXI.Sprite;
 let redDiceInner: PIXI.Sprite;
@@ -26,7 +25,7 @@ export function getDiceLayoutMetrics() {
         return {};
     }
 
-    const diceWidth = (whiteDiceSprite?.x || 74) + (whiteDiceInner.width || 64);
+    const diceWidth = (whiteDiceSprite?.x || 72) + (whiteDiceInner.width || 64);
     const eventHeight =
         eventDiceInner && !eventDiceInner.destroyed
             ? (eventDiceInner.height || 42) + 10
@@ -134,29 +133,6 @@ export async function render(
         diceContainer.zIndex = 1100;
         canvas.app.stage.addChild(diceContainer);
 
-        diceContainer.addChild(
-            createDockRail({
-                width: 152,
-                height: 76,
-            }),
-        );
-        diceContainer.addChild(
-            createDockSlot({
-                x: 8,
-                y: 6,
-                width: SIZE + 4,
-                height: SIZE + 4,
-            }),
-        );
-        diceContainer.addChild(
-            createDockSlot({
-                x: 78,
-                y: 6,
-                width: SIZE + 4,
-                height: SIZE + 4,
-            }),
-        );
-
         redDiceSprite = new PIXI.Sprite();
         redDiceInner = new PIXI.Sprite();
         redDiceInner.width = SIZE;
@@ -172,7 +148,7 @@ export async function render(
         whiteDiceInner = new PIXI.Sprite();
         whiteDiceInner.width = SIZE;
         whiteDiceInner.height = SIZE;
-        whiteDiceSprite.x = SIZE + 14;
+        whiteDiceSprite.x = SIZE + 8;
         whiteDiceInner.interactive = true;
         whiteDiceInner.cursor = "pointer";
         whiteDiceInner.on("pointerdown", rollDice);
@@ -180,8 +156,8 @@ export async function render(
         whiteDiceSprite.addChild(whiteDiceInner);
         whiteDiceSprite.addChild(getBorder(SIZE));
 
-        diceContainer.pivot.x = 76;
-        diceContainer.pivot.y = 38;
+        diceContainer.pivot.x = 68;
+        diceContainer.pivot.y = 32;
     }
 
     if (eventRoll && (!eventDiceInner || eventDiceInner.destroyed)) {

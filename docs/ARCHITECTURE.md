@@ -25,6 +25,7 @@ This document explains how SAKURA components communicate in local development.
 - `ui/src/hud/widgetRegistry.ts`: typed inventory of HUD widgets/regions
 - `ui/src/hudLayout.ts`: compatibility wrapper layer for legacy HUD position helpers
 - `ui/src/uiConfig/`: modular UI configuration system for canvas sizing, HUD geometry, presets, selectors, and shared window chrome
+- `ui/src/gameStatus.ts`: game-phase status panel renderer (current turn/roll/action waiting cues)
 - `ui/src/uiDock.ts`: shared bottom-dock drawing primitives used by hand/trade/action/timer/dice surfaces
 - `ui/src/`: Pixi/runtime rendering modules
 - `ui/utils/mango.ts`: Mongo access from Next.js API routes
@@ -118,7 +119,9 @@ Inbound game messages are handled by `ui/src/store/gameRuntime.ts` (with Pixi re
 - `ui/src/hudRelayout.ts` performs one shared relayout pass, computes a `HUDLayoutResult`, and pushes frames into the major HUD modules instead of letting each module recompute its own viewport math.
 - `ui/src/hudLayout.ts` is still present for compatibility, but it now delegates to the layout engine rather than maintaining its own hardcoded preset.
 - Layout defaults still come from `ui/src/uiConfig/`, which remains the first place to change shared UI geometry or chrome values.
-- Right-side stack (`Game Log`, `Chat`, `Resource Bank`, `Players`) and bottom controls (`player hand`, `action/options`, `dice`, `timer`) now derive from the same shared frame computation.
+- Right-side stack (`Game Log`, `Chat`, `Resource Bank`, `Players`) and bottom controls (`player hand`, `action/options`) now derive from the same shared frame computation.
+- The action stack is now anchored off the End Turn slot: timer sits above End Turn, dice sits above timer, and a compact game-status panel sits to the left of the timer.
+- Seafarers ship-action rail placement now sits to the left of the game-status panel so the lower-right cluster remains readable when extra ship controls are visible.
 - Player panel scale thresholds, hand sizing, and action-bar button/count geometry continue to flow through `ui/src/uiConfig/sections/*` and selector helpers instead of being owned by individual Pixi modules.
 - Shared Pixi window styling and fixed top-left controls (for example fullscreen/pause) also read from `ui/src/uiConfig/selectors/*`, so theme/layout adjustments do not require touching each HUD module.
 - Trade editors, setup-selection overlays, settings details, game-over windows, shared dialogs, and tooltip/error window sizing now also source their layout from the same `ui/src/uiConfig/` runtime.

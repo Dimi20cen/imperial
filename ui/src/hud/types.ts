@@ -15,6 +15,7 @@ export type HUDRegionId = "rightRail" | "bottomRail" | "topLeftControls";
 export type HUDWidgetId =
     | "playerPanel"
     | "bank"
+    | "gameStatus"
     | "actionBar"
     | "actionBarSecondary"
     | "actionBarShips"

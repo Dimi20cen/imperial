@@ -32,6 +32,12 @@ export const HUD_WIDGET_REGISTRY: HUDWidgetDefinition[] = [
         description: "Legacy bank icon positioned off the player panel.",
     },
     {
+        id: "gameStatus",
+        layer: "pixi",
+        region: "floating",
+        description: "Live game-phase status panel above the timer and dice stack.",
+    },
+    {
         id: "hand",
         layer: "pixi",
         region: "bottomRail",

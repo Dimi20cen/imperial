@@ -7,6 +7,7 @@ import * as actions from "../actions";
 import * as buttons from "../buttons";
 import * as notif from "../notif";
 import * as gameLog from "../gameLog";
+import * as gameStatus from "../gameStatus";
 import * as resourceBank from "../resourceBank";
 import { chatMessage } from "../chat";
 import * as tsg from "../../tsg";
@@ -118,6 +119,7 @@ export function handleGameRuntimeMessage(msg: WsResponse) {
                 gs.NeedDice && gs.CurrentPlayerOrder == getThisPlayerOrder(),
             );
             state.renderGameState(gs, getCommandHub());
+            gameStatus.setGameState(gs);
             relayoutHUD();
             board.setRobberTile(gs.Robber?.Tile);
             board.setPirateTile(gs.Pirate?.Tile);
@@ -149,11 +151,14 @@ export function handleGameRuntimeMessage(msg: WsResponse) {
             return;
 
         case MSG_RES_TYPE.ACTION_EXPECTED:
-            actions.handle(new tsg.PlayerAction(msg.data));
+            const action = new tsg.PlayerAction(msg.data);
+            actions.handle(action);
+            gameStatus.setPendingAction(action);
             return;
 
         case MSG_RES_TYPE.TRADE_CLOSE_OFFER:
             trade.closeTradeOffer();
+            gameStatus.setPendingAction(null);
             return;
 
         case MSG_RES_TYPE.CHAT:

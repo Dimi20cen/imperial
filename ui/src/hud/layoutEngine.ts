@@ -69,6 +69,20 @@ export function buildHUDLayout(context: HUDLayoutContext): HUDLayoutResult {
         hud.rightRail.width,
         context.canvasHeight - hud.rightRail.topInset - hud.rightRail.bottomInset,
     );
+    const playerPanelFrame = makeFrame(
+        Math.max(
+            hud.padding,
+            context.canvasWidth - hud.padding - scaledPlayerPanelWidth,
+        ),
+        Math.max(
+            hud.rightRail.topInset,
+            context.canvasHeight -
+                scaledPlayerPanelHeight -
+                hud.rightRail.bottomInset,
+        ),
+        scaledPlayerPanelWidth,
+        scaledPlayerPanelHeight,
+    );
     const handWidth = computeHandWidthForViewport(context.canvasWidth);
     const handFrame = makeFrame(
         hud.bottomRail.leftInset,
@@ -95,34 +109,78 @@ export function buildHUDLayout(context: HUDLayoutContext): HUDLayoutResult {
         hud.actionBar.height,
     );
 
+    const timerWidth = context.turnTimerWidth ?? hud.misc.timerWidth;
+    const timerHeight = context.turnTimerHeight ?? hud.misc.timerHeight;
+    const endTurnCenterX =
+        actionBarFrame.x +
+        hud.actionBar.buttonInset +
+        hud.actionBar.buttonSpacing * hud.misc.endTurnSlotIndex +
+        hud.actionBar.buttonWidth / 2;
+    const turnTimerX = clamp(
+        endTurnCenterX - timerWidth / 2 + hud.misc.timerRightNudge,
+        hud.padding,
+        Math.max(hud.padding, context.canvasWidth - hud.padding - timerWidth),
+    );
+    const turnTimerY = clamp(
+        actionBarFrame.y - hud.misc.timerAboveEndTurnGap - timerHeight,
+        hud.dice.minTopInset,
+        Math.max(hud.dice.minTopInset, context.canvasHeight - hud.padding - timerHeight),
+    );
+    const turnTimerFrame = makeFrame(
+        turnTimerX,
+        turnTimerY,
+        timerWidth,
+        timerHeight,
+    );
+
     const diceWidth = context.diceWidth ?? 138;
     const diceHeight = context.diceHeight ?? 64;
-    const diceX = clamp(
-        rightRail.x - hud.dice.rightRailGap - diceWidth,
+    const diceMaxX = Math.max(
         hud.padding,
-        Math.max(hud.padding, context.canvasWidth - hud.padding - diceWidth),
+        Math.min(
+            context.canvasWidth - hud.padding - diceWidth,
+            playerPanelFrame.x - hud.gap - diceWidth,
+        ),
+    );
+    const diceX = clamp(
+        turnTimerFrame.x + (turnTimerFrame.width - diceWidth) / 2,
+        hud.padding,
+        diceMaxX,
     );
     const diceY = clamp(
-        actionBarFrame.y - hud.dice.aboveActionBarGap - diceHeight,
+        turnTimerFrame.y - hud.misc.diceAboveTimerGap - diceHeight,
         hud.dice.minTopInset,
         Math.max(hud.dice.minTopInset, context.canvasHeight - hud.padding - diceHeight),
     );
     const diceFrame = makeFrame(diceX, diceY, diceWidth, diceHeight);
 
-    const playerPanelFrame = makeFrame(
-        Math.max(
+    const gameStatusWidth = hud.misc.statusWidth;
+    const gameStatusHeight = hud.misc.statusHeight;
+    const gameStatusFrame = makeFrame(
+        clamp(
+            turnTimerFrame.x - hud.misc.statusLeftOfTimerGap - gameStatusWidth,
             hud.padding,
-            context.canvasWidth - hud.padding - scaledPlayerPanelWidth,
+            Math.max(
+                hud.padding,
+                context.canvasWidth - hud.padding - gameStatusWidth,
+            ),
         ),
-        Math.max(
-            hud.rightRail.topInset,
-            context.canvasHeight -
-                scaledPlayerPanelHeight -
-                hud.rightRail.bottomInset,
+        clamp(
+            turnTimerFrame.y + (turnTimerFrame.height - gameStatusHeight) / 2,
+            hud.padding,
+            Math.max(
+                hud.padding,
+                context.canvasHeight - hud.padding - gameStatusHeight,
+            ),
         ),
-        scaledPlayerPanelWidth,
-        scaledPlayerPanelHeight,
+        gameStatusWidth,
+        gameStatusHeight,
     );
+    const seafarersActionBarWidth =
+        hud.actionBar.buttonSpacing +
+        hud.actionBar.buttonWidth +
+        2 * hud.actionBar.buttonInset;
+
     const bankFrame = makeFrame(
         context.canvasWidth - hud.padding - hud.misc.bankSize,
         Math.max(hud.misc.bankTopMin, playerPanelFrame.y - 95),
@@ -179,17 +237,18 @@ export function buildHUDLayout(context: HUDLayoutContext): HUDLayoutResult {
         48,
         32,
     );
-    const turnTimerFrame = makeFrame(
-        actionBarFrame.x + actionBarFrame.width - (context.turnTimerWidth ?? 76) - 6,
-        actionBarFrame.y + (actionBarFrame.height - (context.turnTimerHeight ?? 36)) / 2,
-        context.turnTimerWidth ?? 76,
-        context.turnTimerHeight ?? 36,
-    );
     const pauseToggleFrame = makeFrame(
         controls.pauseToggle.x,
         controls.pauseToggle.y,
         controls.pauseToggle.size,
         controls.pauseToggle.size,
+    );
+    const shipActionsY = Math.max(
+        hud.padding,
+        Math.min(
+            gameStatusFrame.y,
+            actionBarFrame.y - hud.misc.shipAboveStatusGap - hud.actionBar.height,
+        ),
     );
 
     return {
@@ -211,14 +270,20 @@ export function buildHUDLayout(context: HUDLayoutContext): HUDLayoutResult {
         widgets: {
             playerPanel: playerPanelFrame,
             bank: bankFrame,
+            gameStatus: gameStatusFrame,
             actionBar: actionBarFrame,
             actionBarSecondary: actionBarSecondaryFrame,
             actionBarShips: makeFrame(
-                diceFrame.x -
-                    (hud.actionBar.buttonSpacing + hud.actionBar.buttonWidth + 2 * hud.actionBar.buttonInset) -
-                    10,
-                actionBarSecondaryFrame.y,
-                hud.actionBar.buttonSpacing + hud.actionBar.buttonWidth + 2 * hud.actionBar.buttonInset,
+                clamp(
+                    gameStatusFrame.x - hud.misc.shipAboveStatusGap - seafarersActionBarWidth,
+                    handFrame.x,
+                    Math.max(
+                        handFrame.x,
+                        context.canvasWidth - hud.padding - seafarersActionBarWidth,
+                    ),
+                ),
+                shipActionsY,
+                seafarersActionBarWidth,
                 hud.actionBar.height,
             ),
             knightBox: boxFrame,
