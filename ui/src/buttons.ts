@@ -314,6 +314,10 @@ export const buttonCounts: {
     [key in ButtonType]?: { sprite: PIXI.Sprite; text: PIXI.Text };
 } = {};
 
+type KeepBadgeVisibleSprite = PIXI.DisplayObject & {
+    keepVisibleWhenDisabled?: boolean;
+};
+
 export type ButtonSprite = PIXI.Sprite & {
     setBgColor?: (color: string) => void;
     setEnabled: (enabled: boolean | undefined, tintOnly?: boolean) => void;
@@ -614,6 +618,9 @@ export function getCountSprite(
     text.anchor.x = 0.5;
     text.anchor.y = 0.5;
     sprite.addChild(text);
+
+    (sprite as KeepBadgeVisibleSprite).keepVisibleWhenDisabled = true;
+    (text as KeepBadgeVisibleSprite).keepVisibleWhenDisabled = true;
 
     return { sprite, text };
 }
@@ -1325,8 +1332,10 @@ function setButtonEnabled(
 
     // Recursively set tint to all children
     const setTint = (parent: any) => {
-        parent.tint = sprite.tint;
-        parent.alpha = sprite.alpha;
+        const keepVisible = (parent as KeepBadgeVisibleSprite)
+            .keepVisibleWhenDisabled;
+        parent.tint = keepVisible ? 0xffffff : sprite.tint;
+        parent.alpha = keepVisible ? 1 : sprite.alpha;
         parent.children.forEach(setTint);
     };
     setTint(sprite);

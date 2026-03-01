@@ -240,14 +240,20 @@ function drawPlayerRowBackground(
 ) {
     const width = getPlayerPanelWidth();
     const height = getPlayerPanelConfig().highlightRowHeight;
-    const fill = isCurrent ? 0xf0f7f4 : 0xf7f6f2;
-    const border = isCurrent ? 0x2f7d69 : 0x9c978a;
+    const fill = isCurrent ? 0xe7f3ff : 0xf7f6f2;
+    const border = isCurrent ? 0x1d4ed8 : 0x9c978a;
     graphic.clear();
 
     graphic.lineStyle({ color: border, width: isCurrent ? 3 : 1.5 });
     graphic.beginFill(fill, 1);
     graphic.drawRoundedRect(0, y, width - 1, height - 1, 6);
     graphic.endFill();
+
+    if (isCurrent) {
+        graphic.beginFill(0x1d4ed8, 0.18);
+        graphic.drawRoundedRect(0, y, 8, height - 1, 6);
+        graphic.endFill();
+    }
 }
 
 export enum GameMode {
