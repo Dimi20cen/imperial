@@ -40,6 +40,7 @@ npm run dev
 - For LAN testing on iPhone, run the Next dev server with `npm run dev -- -H 0.0.0.0 -p 3000`, then open `http://<YOUR_LAN_IP>:3000` in Safari.
 - To launch without Safari chrome, use Safari's `Share -> Add to Home Screen`, then start SAKURA from the Home Screen.
 - `viewport-fit=cover` and safe-area padding are enabled globally in `ui/styles/globals.css` so installed sessions can use the full screen without clipping behind the notch or home indicator.
+- The in-game route (`ui/pages/[gameId].tsx`) locks page-level scrolling (`document` + `body` overflow hidden) so wheel/touch gestures stay scoped to the Pixi game surface and HUD, while non-game pages keep normal scroll behavior.
 
 ## Asset Notes
 
@@ -81,6 +82,7 @@ npm run dev
 - Live trade-offer left markers are role-aware for clarity: outgoing offers show the group icon on the ask row, while incoming/third-party offers show the requester avatar there; the give row continues to show the current-player avatar. Hover tooltips on markers/actions explain transfer direction and button intent.
 - `ui/src/uiConfig/` exposes named presets via `initializeUIConfig({ preset, overrides })` for `default`, `compact`, and `mobileLandscape`.
 - Shared dock/panel primitives now live in `ui/src/uiDock.ts`; use those before introducing new custom Pixi chrome for the hand, trade rows, action dock, timer, dice, or right-rail panels.
+- Main action-bar structure controls (settlement/city/road/ship) in `ui/src/buttons.ts` now resolve from player-color piece assets via `getButtonSprite(..., bgColor)` so local-player structure actions visually match the active player color.
 - HUD surface/text theming should flow through `ui/src/uiConfig/sections/bottomDock.ts` plus `ui/src/uiDock.ts`; timer, dice borders, chat input, and chat popup now consume these shared dock tokens instead of local hardcoded colors.
 - When adjusting HUD spacing or panel sizes, prefer editing `ui/src/uiConfig/sections/*`, `ui/src/uiConfig/presets.ts`, or `ui/src/hud/layoutEngine.ts` first and only change module code when behavior or rendering needs to change.
 - The default hand rail width is capped by `hud.bottomRail.handMaxWidth` (currently `760`) to keep more space available for nearby action clusters.
