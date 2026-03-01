@@ -42,6 +42,13 @@ const PlayerList: FunctionComponent<{
     socket?: MutableRefObject<ReconnectingWebSocket | null>;
 }> = ({ lobbyState, socket }) => {
     const usernameModal = UsernameChangeModal(socket);
+    const orderedPlayers = [...lobbyState.players].sort((a, b) => {
+        const aIsSelf = a.Order === lobbyState.order;
+        const bIsSelf = b.Order === lobbyState.order;
+        if (aIsSelf && !bIsSelf) return 1;
+        if (!aIsSelf && bIsSelf) return -1;
+        return a.Order - b.Order;
+    });
 
     const kickUser = (username: string) => {
         if (socket?.current != null) {
@@ -58,7 +65,7 @@ const PlayerList: FunctionComponent<{
         <div className="grid">
             {usernameModal.component}
 
-            {lobbyState.players.map((player) => (
+            {orderedPlayers.map((player) => (
                 <div
                     key={player.Order}
                     className={playerRowClass(

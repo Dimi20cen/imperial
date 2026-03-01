@@ -105,6 +105,30 @@ function getPlayerRowOffset(order: number) {
     return order * getPlayerPanelConfig().rowHeight;
 }
 
+function getDisplayOrders(states: PlayerState[]) {
+    const uniqueOrders = Array.from(
+        new Set(states.map((s) => Number(s.Order))),
+    ).sort((a, b) => a - b);
+    const thisOrder = getThisPlayerOrder();
+    const meIndex = uniqueOrders.indexOf(thisOrder);
+    if (meIndex >= 0) {
+        uniqueOrders.splice(meIndex, 1);
+        uniqueOrders.push(thisOrder);
+    }
+    return uniqueOrders;
+}
+
+function getPlayerRowOffsetByDisplayOrder(
+    rowIndexByOrder: Map<number, number>,
+    order: number,
+) {
+    const rowIndex = rowIndexByOrder.get(order);
+    if (rowIndex === undefined) {
+        return getPlayerRowOffset(order);
+    }
+    return rowIndex * getPlayerPanelConfig().rowHeight;
+}
+
 export enum GameMode {
     Base = 1,
     CitiesAndKnights = 2,
@@ -338,6 +362,10 @@ function rerender() {
 export function renderGameState(gs: GameState, commandHub: CommandHub) {
     const states = gs.PlayerStates;
     lastKnownStates = states;
+    const displayOrders = getDisplayOrders(states);
+    const rowIndexByOrder = new Map<number, number>(
+        displayOrders.map((order, index) => [order, index]),
+    );
 
     if (lastKnownGameState) {
         // Chime cause its your turn
@@ -383,7 +411,10 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             players[state.Order] = {} as any;
             const spriteset = players[state.Order];
 
-            const offset = getPlayerRowOffset(state.Order);
+            const offset = getPlayerRowOffsetByDisplayOrder(
+                rowIndexByOrder,
+                state.Order,
+            );
 
             {
                 const g = new PIXI.Graphics();
