@@ -48,19 +48,39 @@ export { app };
  */
 export async function initialize(div: HTMLDivElement, done?: () => void) {
     const canvasConfig = getCanvasConfig();
-    const newApp = new PIXI.Application({
-        backgroundColor: canvasConfig.backgroundColor,
-        width: canvasConfig.width,
-        height: canvasConfig.height,
-        antialias: true,
-        autoDensity: true,
-        resolution: canvasConfig.resolution,
-        sharedTicker: false,
-        autoStart: false,
-        clearBeforeRender: false,
-        preserveDrawingBuffer: true,
-        powerPreference: "high-performance",
-    });
+    let newApp: PIXI.Application;
+    try {
+        newApp = new PIXI.Application({
+            backgroundColor: canvasConfig.backgroundColor,
+            width: canvasConfig.width,
+            height: canvasConfig.height,
+            antialias: true,
+            autoDensity: true,
+            resolution: canvasConfig.resolution,
+            sharedTicker: false,
+            autoStart: false,
+            clearBeforeRender: false,
+            preserveDrawingBuffer: true,
+            powerPreference: "high-performance",
+        });
+    } catch (primaryErr) {
+        console.warn(
+            "Pixi renderer init failed with high-performance settings; retrying with fallback options.",
+            primaryErr,
+        );
+        newApp = new PIXI.Application({
+            backgroundColor: canvasConfig.backgroundColor,
+            width: canvasConfig.width,
+            height: canvasConfig.height,
+            antialias: false,
+            autoDensity: true,
+            resolution: canvasConfig.resolution,
+            sharedTicker: false,
+            autoStart: false,
+            clearBeforeRender: false,
+            preserveDrawingBuffer: false,
+        });
+    }
 
     app = newApp as any;
     app.dirty = true;
