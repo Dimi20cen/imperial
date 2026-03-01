@@ -40,6 +40,14 @@ function relayoutEditorWindows() {
     ) {
         return;
     }
+    if (
+        offerWindow.container.destroyed ||
+        askWindow.container.destroyed ||
+        possibleAskWindow.container.destroyed ||
+        offerYesNoWindow.container.destroyed
+    ) {
+        return;
+    }
 
     const tradeEditor = getTradeConfig().editor;
     const handHeight = getBottomRailConfig().handHeight;
@@ -53,7 +61,7 @@ function relayoutEditorWindows() {
         canvasHeight: canvas.getHeight(),
     });
     const editorX = handPos.x;
-    const actionRailWidth = offerYesNoWindow.container.width || 48;
+    const actionRailWidth = 48;
     const resolvedX = clampSpanWithinBounds({
         preferredX: editorX,
         minX: handPos.x,
