@@ -75,6 +75,7 @@ npm run dev
 - `ui/src/hudRelayout.ts` now performs a single HUD layout pass on resize/runtime refresh, then distributes the computed frames to modules like `chat`, `gameLog`, `resourceBank`, `buttons`, `hand`, `dice`, and `state`.
 - `ui/src/gameStatus.ts` renders the live game-phase panel and consumes a dedicated `gameStatus` frame from the shared HUD layout result.
 - `ui/src/hudLayout.ts` remains as a compatibility helper layer for modules that still consume legacy `compute*Position` helpers, but it now delegates to the shared layout engine instead of owning a separate preset.
+- The in-game player panel stat cluster (resource/dev cards, longest road, largest army) in `ui/src/state.ts` is now width-aware and derives horizontal offsets/icon sizes from the resolved player-panel width, so compact/mobile presets keep the row contents inside bounds.
 - Player panel sizing/scaling, hand height, action-bar button geometry, trade/editor windows, setup-choice overlays, settings details, game-over layout, shared yes/no dialogs, tooltips, and error modals all resolve through `ui/src/uiConfig/` selectors now.
 - Trade editor controls now use a dedicated 3-button action rail in `ui/src/trade.ts`: top submits a bank trade, middle submits a co-player trade offer, and bottom clears/cancels the current draft. The bank button is disabled unless the current draft satisfies bank-trade ratio/exchange validity.
 - Trade editor lanes use semantic left markers: top lane has no marker, middle lane shows only a green down arrow, and bottom lane shows only a red up arrow.

@@ -33,7 +33,6 @@ import { CardType } from "./entities";
 import CommandHub from "./commands";
 import { syncTurnTimerSnapshot } from "./store/turnTimerRuntime";
 import {
-    getBottomDockConfig,
     getPendingActionOverlayConfig,
     getPlayerPanelConfig,
 } from "./uiConfig";
@@ -131,28 +130,122 @@ function getPlayerRowOffsetByDisplayOrder(
     return rowIndex * getPlayerPanelConfig().rowHeight;
 }
 
+type PlayerRowLayout = {
+    avatarX: number;
+    avatarScale: number;
+    avatarY: number;
+    vpRibbonWidth: number;
+    vpRibbonHeight: number;
+    cardSlotWidth: number;
+    cardSlotHeight: number;
+    cardImageWidth: number;
+    cardImageHeight: number;
+    cardChipX: number;
+    cardChipY: number;
+    cardChipWidth: number;
+    cardChipHeight: number;
+    cardChipRadius: number;
+    cardChipBorderWidth: number;
+    cardTextX: number;
+    cardTextY: number;
+    cardTextFontSize: number;
+    iconSlotWidth: number;
+    iconSlotHeight: number;
+    iconImageWidth: number;
+    iconImageHeight: number;
+    iconTextX: number;
+    iconTextY: number;
+    iconTextFontSize: number;
+    cardsX: number;
+    dcardX: number;
+    roadX: number;
+    knightX: number;
+    cardY: number;
+    iconY: number;
+    nameFontSize: number;
+    nameY: number;
+    nameLeftX: number;
+    botGapDefault: number;
+};
+
+function getPlayerRowLayout(): PlayerRowLayout {
+    const panelWidth = getPlayerPanelWidth();
+    const rowHeight = getPlayerPanelConfig().rowHeight;
+    const isCompact = panelWidth <= 240 || rowHeight <= 74;
+
+    const cardSlotWidth = isCompact ? 34 : 40;
+    const cardSlotHeight = isCompact ? 48 : 54;
+    const iconSlotWidth = isCompact ? 24 : 30;
+    const iconSlotHeight = isCompact ? 36 : 42;
+    const cardGap = isCompact ? 2 : 4;
+    const groupGap = isCompact ? 8 : 22;
+    const iconGap = 2;
+    const rightInset = isCompact ? 4 : 6;
+    const statsWidth =
+        cardSlotWidth * 2 +
+        cardGap +
+        groupGap +
+        iconSlotWidth * 2 +
+        iconGap;
+    const cardsX = panelWidth - rightInset - statsWidth;
+    const dcardX = cardsX + cardSlotWidth + cardGap;
+    const roadX = dcardX + cardSlotWidth + groupGap;
+    const knightX = roadX + iconSlotWidth + iconGap;
+
+    const avatarScale = isCompact ? 0.88 : 1;
+
+    return {
+        avatarX: isCompact ? 14 : 18,
+        avatarScale,
+        avatarY: isCompact ? 12 : 16,
+        vpRibbonWidth: isCompact ? 40 : 44,
+        vpRibbonHeight: isCompact ? 16 : 18,
+        cardSlotWidth,
+        cardSlotHeight,
+        cardImageWidth: isCompact ? 32 : 38,
+        cardImageHeight: isCompact ? 44 : 50,
+        cardChipX: isCompact ? 16 : 19,
+        cardChipY: 2,
+        cardChipWidth: isCompact ? 16 : 18,
+        cardChipHeight: isCompact ? 16 : 18,
+        cardChipRadius: 5,
+        cardChipBorderWidth: 2,
+        cardTextX: isCompact ? 24 : 28,
+        cardTextY: isCompact ? 9 : 11,
+        cardTextFontSize: isCompact ? 14 : 16,
+        iconSlotWidth,
+        iconSlotHeight,
+        iconImageWidth: isCompact ? 22 : 28,
+        iconImageHeight: isCompact ? 18 : 22,
+        iconTextX: isCompact ? 11 : 14,
+        iconTextY: isCompact ? 20 : 24,
+        iconTextFontSize: isCompact ? 15 : 17,
+        cardsX,
+        dcardX,
+        roadX,
+        knightX,
+        cardY: isCompact ? 18 : 24,
+        iconY: isCompact ? 22 : 28,
+        nameFontSize: isCompact ? 11 : 12,
+        nameY: 6,
+        nameLeftX: isCompact ? 24 : 30,
+        botGapDefault: 6,
+    };
+}
+
 function drawPlayerRowBackground(
     graphic: PIXI.Graphics,
     y: number,
     isCurrent: boolean,
 ) {
-    const bottomDock = getBottomDockConfig();
-    const panel = bottomDock.panel;
-    const slot = bottomDock.slot;
     const width = getPlayerPanelWidth();
     const height = getPlayerPanelConfig().highlightRowHeight;
+    const fill = isCurrent ? 0xf0f7f4 : 0xf7f6f2;
+    const border = isCurrent ? 0x2f7d69 : 0x9c978a;
     graphic.clear();
 
-    if (isCurrent) {
-        graphic.lineStyle({ color: slot.activeBorder, width: 3 });
-        graphic.beginFill(panel.headerFill, 0.98);
-        graphic.drawRoundedRect(0, y, width - 1, height - 1, 7);
-        graphic.endFill();
-        return;
-    }
-
-    graphic.lineStyle({ color: panel.border, width: 2 });
-    graphic.beginFill(panel.fill, 0.98);
+    graphic.lineStyle({ color: border, width: isCurrent ? 3 : 1.5 });
+    graphic.beginFill(fill, 1);
     graphic.drawRoundedRect(0, y, width - 1, height - 1, 6);
     graphic.endFill();
 }
@@ -382,6 +475,7 @@ function rerender() {
 export function renderGameState(gs: GameState, commandHub: CommandHub) {
     const states = gs.PlayerStates;
     lastKnownStates = states;
+    const rowLayout = getPlayerRowLayout();
     const displayOrders = getDisplayOrders(states);
     const rowIndexByOrder = new Map<number, number>(
         displayOrders.map((order, index) => [order, index]),
@@ -473,7 +567,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             ) => {
                 const imgc = new PIXI.Container();
                 imgc.interactive = true;
-                imgc.hitArea = new PIXI.RoundedRectangle(0, 0, 44, 58, 6);
+                imgc.hitArea = new PIXI.RoundedRectangle(
+                    0,
+                    0,
+                    rowLayout.cardSlotWidth,
+                    rowLayout.cardSlotHeight,
+                    6,
+                );
                 imgc.x = x;
                 imgc.y = y + offset;
                 new windows.TooltipHandler(imgc, title);
@@ -481,27 +581,51 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
 
                 const img = new PIXI.Sprite();
                 assets.assignTexture(img, assets.icons[icon]);
-                img.width = 42;
-                img.height = 56;
+                img.width = rowLayout.cardImageWidth;
+                img.height = rowLayout.cardImageHeight;
+                img.x = 1;
+                img.y = Math.round((rowLayout.cardSlotHeight - img.height) / 2);
                 imgc.addChild(img);
+
+                const cardBg = new PIXI.Graphics();
+                cardBg.lineStyle({ color: 0x94a3b8, width: 1.5 });
+                cardBg.beginFill(0xe2e8f0, 1);
+                cardBg.drawRoundedRect(
+                    0,
+                    0,
+                    rowLayout.cardSlotWidth,
+                    rowLayout.cardSlotHeight,
+                    6,
+                );
+                cardBg.endFill();
+                imgc.addChildAt(cardBg, 0);
 
                 const text = new PIXI.Text(
                     ``,
-                    createPanelTitleTextStyle({
-                        fontSize: 18,
-                        fill: 0xffffff,
+                    createPanelBodyTextStyle({
+                        fontSize: rowLayout.cardTextFontSize,
+                        fill: 0xf8fafc,
                         align: "center",
                     }),
                 );
                 const chip = new PIXI.Graphics();
-                chip.lineStyle({ color: 0xcde4ff, width: 2 });
-                chip.beginFill(0x1f5ea8);
-                chip.drawRoundedRect(22, 2, 20, 20, 5);
+                chip.lineStyle({
+                    color: 0x0f172a,
+                    width: 1.2,
+                });
+                chip.beginFill(0x1f2937);
+                chip.drawRoundedRect(
+                    rowLayout.cardChipX,
+                    rowLayout.cardChipY,
+                    rowLayout.cardChipWidth,
+                    rowLayout.cardChipHeight,
+                    4,
+                );
                 chip.endFill();
                 imgc.addChild(chip);
                 text.anchor.set(0.5);
-                text.x = 32;
-                text.y = 12;
+                text.x = rowLayout.cardTextX;
+                text.y = rowLayout.cardTextY;
                 imgc.addChild(text);
                 return { img, text, icon };
             };
@@ -514,7 +638,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             ) => {
                 const imgc = new PIXI.Container();
                 imgc.interactive = true;
-                imgc.hitArea = new PIXI.RoundedRectangle(0, 0, 30, 42, 6);
+                imgc.hitArea = new PIXI.RoundedRectangle(
+                    0,
+                    0,
+                    rowLayout.iconSlotWidth,
+                    rowLayout.iconSlotHeight,
+                    6,
+                );
                 imgc.x = x;
                 imgc.y = y + offset;
                 new windows.TooltipHandler(imgc, title);
@@ -523,22 +653,41 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
                 const img = new PIXI.Sprite();
                 assets.assignTexture(img, assets.icons[icon]);
                 const iconAsset = assets.icons[icon];
-                const scale = Math.min(28 / iconAsset.width, 22 / iconAsset.height);
+                const scale = Math.min(
+                    rowLayout.iconImageWidth / iconAsset.width,
+                    rowLayout.iconImageHeight / iconAsset.height,
+                );
                 img.scale.set(scale);
-                img.x = Math.round((28 - iconAsset.width * scale) / 2);
+                img.x = Math.round(
+                    (rowLayout.iconImageWidth - iconAsset.width * scale) / 2,
+                );
                 img.y = 2;
                 imgc.addChild(img);
+
+                const iconBg = new PIXI.Graphics();
+                iconBg.lineStyle({ color: 0x94a3b8, width: 1.25 });
+                iconBg.beginFill(0xe2e8f0, 1);
+                iconBg.drawRoundedRect(
+                    0,
+                    0,
+                    rowLayout.iconSlotWidth,
+                    rowLayout.iconSlotHeight,
+                    6,
+                );
+                iconBg.endFill();
+                imgc.addChildAt(iconBg, 0);
 
                 const text = new PIXI.Text(
                     ``,
                     createPanelBodyTextStyle({
-                        fontSize: 34 / 2,
+                        fontSize: rowLayout.iconTextFontSize,
                         align: "center",
+                        fill: 0x334155,
                     }),
                 );
                 text.anchor.set(0.5, 0);
-                text.x = 14;
-                text.y = 24;
+                text.x = rowLayout.iconTextX;
+                text.y = rowLayout.iconTextY;
                 imgc.addChild(text);
                 return { img, text, icon };
             };
@@ -547,13 +696,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             spriteset.name = new PIXI.Text(
                 state.Username,
                 createPanelTitleTextStyle({
-                    fontSize: 12,
+                    fontSize: rowLayout.nameFontSize,
                     align: "center",
                 }),
             );
             spriteset.name.anchor.x = 0.5;
             spriteset.name.x = Math.round(getPlayerPanelWidth() / 2);
-            spriteset.name.y = 12 + offset;
+            spriteset.name.y = rowLayout.nameY + offset;
             container.addChild(spriteset.name);
 
             // Bot identifier
@@ -585,20 +734,20 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             };
 
             spriteset.cards = createCardCounter(
-                86,
-                24,
+                rowLayout.cardsX,
+                rowLayout.cardY,
                 assets.ICON.CARDS,
                 "Number of resource cards this player currently holds",
             );
             spriteset.dcard = createCardCounter(
-                134,
-                24,
+                rowLayout.dcardX,
+                rowLayout.cardY,
                 assets.ICON.DCARD,
                 "Number of action cards this player currently holds",
             );
             spriteset.road = createIconCounter(
-                196,
-                26,
+                rowLayout.roadX,
+                rowLayout.iconY,
                 assets.ICON.ROAD,
                 "Length of the longest road of this player",
             );
@@ -607,8 +756,8 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
                     ? "Active number of Warriors with allegiance to this player"
                     : "Number of played Knight cards (Largest Army progress)";
             spriteset.knights = createIconCounter(
-                228,
-                26,
+                rowLayout.knightX,
+                rowLayout.iconY,
                 assets.ICON.KNIGHT,
                 knightTooltip,
             );
@@ -620,6 +769,7 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             if (settings.Mode == GameMode.CitiesAndKnights) {
                 const p = players[state.Order];
                 p.improvements = {};
+                const improvementsBaseX = rowLayout.roadX - 4;
 
                 let j = 0;
                 for (const t of [
@@ -637,7 +787,7 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
                         const tex = canvas.app.generateRenderTexture(g);
 
                         const s = new PIXI.Sprite(tex);
-                        s.x = 214 + 8 * i;
+                        s.x = improvementsBaseX + 8 * i;
                         s.y = 8 * j + 56 + offset;
                         container.addChild(s);
                         s.alpha = 0.15;
@@ -654,8 +804,6 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             getThisPlayerOrder() == state.Order
                 ? Math.max(lastKnownSecretVictoryPoints, state.VictoryPoints)
                 : state.VictoryPoints;
-        const panelPalette = getBottomDockConfig().panel;
-
         const p = players[state.Order];
         const offset = getPlayerRowOffsetByDisplayOrder(
             rowIndexByOrder,
@@ -665,10 +813,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
         drawPlayerRowBackground(p.bg, offset, isCurrent);
         p.bg.visible = true;
 
-        p.avatar.x = 18;
-        p.avatar.y = offset + (isCurrent ? 28 : 18);
+        p.avatar.scale.set(rowLayout.avatarScale);
+        p.avatar.x = rowLayout.avatarX;
+        p.avatar.y = offset + rowLayout.avatarY;
         p.vpRibbon.x = p.avatar.x + 4;
-        p.vpRibbon.y = p.avatar.y + 42;
+        p.vpRibbon.y = p.avatar.y + (52 * rowLayout.avatarScale - 10);
+        p.vpRibbon.width = rowLayout.vpRibbonWidth;
+        p.vpRibbon.height = rowLayout.vpRibbonHeight;
         p.victoryPoint.text.x = p.vpRibbon.x + p.vpRibbon.width / 2;
         p.victoryPoint.text.y = p.vpRibbon.y + p.vpRibbon.height / 2 + 1;
 
@@ -676,30 +827,30 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
         const dcardContainer = p.dcard.img.parent as PIXI.Container;
         const roadContainer = p.road.img.parent as PIXI.Container;
         const knightContainer = p.knights.img.parent as PIXI.Container;
-        cardsContainer.x = 104;
-        cardsContainer.y = offset + (isCurrent ? 34 : 24);
-        dcardContainer.x = 152;
+        cardsContainer.x = rowLayout.cardsX;
+        cardsContainer.y = offset + rowLayout.cardY;
+        dcardContainer.x = rowLayout.dcardX;
         dcardContainer.y = cardsContainer.y;
-        roadContainer.x = 218;
-        roadContainer.y = offset + (isCurrent ? 40 : 28);
-        knightContainer.x = 250;
+        roadContainer.x = rowLayout.roadX;
+        roadContainer.y = offset + rowLayout.iconY;
+        knightContainer.x = rowLayout.knightX;
         knightContainer.y = roadContainer.y;
 
         p.name.style = createPanelTitleTextStyle({
-            fontSize: isCurrent ? 18 : 13,
-            align: isCurrent ? "center" : "left",
-            fill: panelPalette.titleText,
+            fontSize: rowLayout.nameFontSize,
+            align: "left",
+            fill: 0x1f2937,
         });
-        if (isCurrent) {
-            p.name.anchor.x = 0.5;
-            p.name.x = Math.round(getPlayerPanelWidth() / 2);
-            p.name.y = offset + 10;
-        } else {
-            p.name.anchor.x = 0;
-            p.name.x = 30;
-            p.name.y = offset + 6;
+        p.name.scale.set(1);
+        p.name.anchor.x = 0;
+        p.name.x = rowLayout.nameLeftX;
+        p.name.y = offset + rowLayout.nameY;
+        const maxNameWidth = Math.max(40, rowLayout.cardsX - p.name.x - 10);
+        if (p.name.width > maxNameWidth) {
+            const scale = maxNameWidth / p.name.width;
+            p.name.scale.set(scale);
         }
-        p.bot.x = p.name.x + (isCurrent ? p.name.width / 2 + 8 : p.name.width + 6);
+        p.bot.x = p.name.x + p.name.width + rowLayout.botGapDefault;
         p.bot.y = p.name.y + p.name.height / 2;
 
         const knightCount = Math.max(0, Number(state.Knights ?? 0));
@@ -730,11 +881,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
                 assets.highlightedIcons[p.road.icon] ?? assets.icons[p.road.icon],
             );
             p.road.img.tint = 0xffffff;
-            p.road.text.style.fill = 0xc99200;
+            p.road.text.style.fill = 0xb45309;
+            p.road.img.alpha = 1;
         } else {
             assets.assignTexture(p.road.img, assets.icons[p.road.icon]);
-            p.road.img.tint = 0xffffff;
-            p.road.text.style.fill = panelPalette.bodyText;
+            p.road.img.tint = 0x64748b;
+            p.road.text.style.fill = 0x475569;
+            p.road.img.alpha = 0.95;
         }
 
         // Highlight extra points / most active knights
@@ -745,11 +898,13 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
                     assets.icons[p.knights.icon],
             );
             p.knights.img.tint = 0xffffff;
-            p.knights.text.style.fill = 0xc99200;
+            p.knights.text.style.fill = 0xb45309;
+            p.knights.img.alpha = 1;
         } else {
             assets.assignTexture(p.knights.img, assets.icons[p.knights.icon]);
-            p.knights.img.tint = 0xffffff;
-            p.knights.text.style.fill = panelPalette.bodyText;
+            p.knights.img.tint = 0x64748b;
+            p.knights.text.style.fill = 0x475569;
+            p.knights.img.alpha = 0.95;
         }
 
         // Highlight too many cards
@@ -758,7 +913,7 @@ export function renderGameState(gs: GameState, commandHub: CommandHub) {
             p.cards.text.style.fill = 0xdd0000;
         } else {
             p.cards.img.tint = 0xffffff;
-            p.cards.text.style.fill = 0xffffff;
+            p.cards.text.style.fill = 0xf8fafc;
         }
 
         if (settings.Mode == GameMode.CitiesAndKnights) {
