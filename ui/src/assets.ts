@@ -354,9 +354,6 @@ export const uiKit = {
 
 export const playerAvatarIcon = playerAvatarIconS;
 
-import seaS from "../assets/runtime/base/board/sea.jpg";
-export const sea = seaS;
-
 import barbarianTrackS from "../assets/runtime/cities-knights/board/barbarian/track.png";
 export const barbarianTrack = barbarianTrackS;
 import barbarianShipS from "../assets/runtime/cities-knights/board/barbarian/ship.png";

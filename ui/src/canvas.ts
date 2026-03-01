@@ -49,7 +49,7 @@ export { app };
 export async function initialize(div: HTMLDivElement, done?: () => void) {
     const canvasConfig = getCanvasConfig();
     const newApp = new PIXI.Application({
-        backgroundColor: 0x0077be,
+        backgroundColor: canvasConfig.backgroundColor,
         width: canvasConfig.width,
         height: canvasConfig.height,
         antialias: true,

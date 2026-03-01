@@ -7,6 +7,7 @@ export type UIConfig = {
         width: number;
         height: number;
         resolution: number;
+        backgroundColor: number;
     };
     controls: {
         fullscreenButton: {

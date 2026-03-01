@@ -23,6 +23,7 @@ import {
     Merchant,
 } from "../tsg";
 import { hexToUrlString } from "../utils";
+import { getCanvasConfig } from "./uiConfig";
 
 const KNIGHT_DISPLAY_WIDTH = 37;
 const SETTLEMENT_DISPLAY_WIDTH = 40;
@@ -45,6 +46,7 @@ let board: IBoard;
 /** Board container */
 export let container: Viewport & PIXI.Container;
 let boardContainer: PIXI.Container;
+let stageBackground: PIXI.Graphics | null = null;
 
 /** Map from coordinates to vertex placements */
 let vertexPlacements: { [key: CoordStr]: IVertexPlacement };
@@ -118,15 +120,17 @@ export function initialize() {
 
     container.sortableChildren = true;
 
-    canvas.app.stage.addChild(container);
+    if (stageBackground && !stageBackground.destroyed) {
+        stageBackground.destroy();
+    }
+    stageBackground = new PIXI.Graphics();
+    stageBackground.zIndex = -1000;
+    stageBackground.beginFill(getCanvasConfig().backgroundColor);
+    stageBackground.drawRect(0, 0, canvas.getWidth(), canvas.getHeight());
+    stageBackground.endFill();
+    canvas.app.stage.addChild(stageBackground);
 
-    const background = new PIXI.Sprite();
-    PIXI.Texture.fromURL(assets.sea.src).then((tex) => {
-        background.texture = tex;
-    });
-    background.zIndex = -1;
-    background.scale.set(1);
-    canvas.app.stage.addChild(background);
+    canvas.app.stage.addChild(container);
 
     dice.render(1, 1, 0);
     canvas.app.markDirty();

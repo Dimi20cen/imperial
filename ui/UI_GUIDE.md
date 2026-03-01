@@ -61,7 +61,7 @@ npm run dev
 - Top-left control icons now use Colonist-style SVG runtime assets for fullscreen (`ui/assets/runtime/shared/buttons/icon-fullscreen-expand.svg`) and settings (`ui/assets/runtime/shared/ui/icon-settings.svg`); pause/resume and mute/unmute are exposed in the settings menu options.
 - Profile avatar assets live under `ui/assets/runtime/shared/profile-icons`; editable source art can live under the mirrored `ui/assets/source/shared/profile-icons`. In-game player panel avatars currently use the shared `player-overview.svg` glyph with per-player colored circular backgrounds.
 - Ports live under `ui/assets/source/base/ports` and `ui/assets/runtime/base/ports`; the active base port art now uses SVG sign files mapped by `ui/src/assets.ts` as `1=wood`, `2=brick`, `3=wool`, `4=wheat`, `5=ore`, and `6=any`, plus `pier.svg` as the dock connector rendered behind each sign.
-- Seafarers runtime textures are currently limited to the files still referenced by the app, such as `beach.png`, `island-l.png`, and `island-r.png`, while the sea board image now lives under `ui/assets/runtime/base/board/sea.jpg`.
+- Seafarers runtime textures are currently limited to the files still referenced by the app, such as `beach.png`, `island-l.png`, and `island-r.png`; the base ocean background is now config-driven from `ui/src/uiConfig/sections/canvas.ts` (`canvas.backgroundColor`) instead of a `sea.jpg` asset.
 - `ui/src/assets.ts` declares tile render modes and a reference illustrated tile size so imported tile art can be normalized by asset dimensions, while `ui/src/board.ts` applies the final snug spacing and scale adjustments.
 
 ## UI Configuration
@@ -84,6 +84,7 @@ npm run dev
 - Shared dock/panel primitives now live in `ui/src/uiDock.ts`; use those before introducing new custom Pixi chrome for the hand, trade rows, action dock, timer, dice, or right-rail panels.
 - Main action-bar structure controls (settlement/city/road/ship) in `ui/src/buttons.ts` now resolve from player-color piece assets via `getButtonSprite(..., bgColor)` so local-player structure actions visually match the active player color.
 - HUD surface/text theming should flow through `ui/src/uiConfig/sections/bottomDock.ts` plus `ui/src/uiDock.ts`; timer, dice borders, chat input, and chat popup now consume these shared dock tokens instead of local hardcoded colors.
+- The default HUD chrome now uses a flatter neutral rail style (parchment + slate accents) configured in `ui/src/uiConfig/sections/bottomDock.ts`; prefer tuning those tokens before per-widget styling overrides when matching right-rail/bottom-strip references.
 - When adjusting HUD spacing or panel sizes, prefer editing `ui/src/uiConfig/sections/*`, `ui/src/uiConfig/presets.ts`, or `ui/src/hud/layoutEngine.ts` first and only change module code when behavior or rendering needs to change.
 - The default hand rail width is capped by `hud.bottomRail.handMaxWidth` (currently `760`) to keep more space available for nearby action clusters.
 - Timer/dice/status placement is config-driven from `ui/src/uiConfig/sections/hud.ts` and currently anchors to the End Turn slot (`timerAboveEndTurnGap`, `diceAboveTimerGap`, `endTurnSlotIndex`, `timerWidth`, `timerHeight`, `statusWidth`, `statusHeight`, `timerRightNudge`), with the status panel positioned to the timer's left.
