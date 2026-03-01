@@ -371,8 +371,8 @@ function getPlayerPieceButtonScale(
         case ButtonType.Road:
             return (
                 Math.min(
-                    (width * 0.14) / simg.width,
-                    (height * 0.72) / simg.height,
+                    (width * 0.12) / simg.width,
+                    (height * 0.48) / simg.height,
                 ) * iconScaleMultiplier
             );
         case ButtonType.Ship:
@@ -531,7 +531,19 @@ export function getButtonSprite(
         image.y = (h - simg.height * scale) / 2;
     });
     if (!playerPieceButton && !devCardButton) {
-        image.scale.set(width / simg.width, h / simg.height);
+        if (type === ButtonType.Road) {
+            // Road asset is very tall; keep aspect ratio so it doesn't get stretched wide.
+            const displayHeight = height || width;
+            const scale = Math.min(
+                (width * 0.288) / simg.width,
+                (displayHeight * 0.72) / simg.height,
+            );
+            image.scale.set(scale);
+            image.x = (width - simg.width * scale) / 2;
+            image.y = (displayHeight - simg.height * scale) / 2;
+        } else {
+            image.scale.set(width / simg.width, h / simg.height);
+        }
     }
     image.zIndex = 1;
 
