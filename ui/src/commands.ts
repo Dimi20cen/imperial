@@ -166,10 +166,15 @@ export default class CommandHub {
         });
     };
 
-    public createTradeOffer(offer: number[], ask: number[]) {
+    public createTradeOffer(
+        offer: number[],
+        ask: number[],
+        mode: socketTypes.TRADE_MODE = "auto",
+    ) {
         this.sendGameMessage({
             t: socketTypes.MSG_TYPE.TRADE,
             tt: socketTypes.TRADE_TYPE.CREATE_OFFER,
+            trm: mode,
             offer: {
                 Give: offer,
                 Ask: ask,

@@ -49,6 +49,8 @@ export enum TRADE_TYPE {
     CLOSE_OFFER = "close",
 }
 
+export type TRADE_MODE = "auto" | "bank" | "player";
+
 /**
  * Type of object to build
  */
@@ -96,6 +98,7 @@ export interface WsDataMessage {
 
     // Trade
     tt?: TRADE_TYPE;
+    trm?: TRADE_MODE;
     offer?: { Give: number[]; Ask: number[] }; // offer details for creation
     oid?: number; // offer ID
     acceptingPlayer?: number; // accepting player

@@ -18,25 +18,43 @@ import {
 import {
     addIconSprite,
     createDockRail,
+    createDockSlot,
     createDockSideRail,
 } from "./uiDock";
 import {
     clampSpanWithinBounds,
     computeActionBarPosition,
     computeHandPosition,
-    computeHandWidth,
 } from "./hudLayout";
 
 type OfferObject = tsg.TradeOffer & {
     container: PIXI.Container & anim.Translatable;
 };
 
+type TradeSubmitMode = "auto" | "bank" | "player";
+
+type TradeActionButton = {
+    container: PIXI.Container;
+    setEnabled: (enabled: boolean) => void;
+};
+
+type TradeActionRail = {
+    container: PIXI.Container;
+    width: number;
+    height: number;
+    bank: TradeActionButton;
+    player: TradeActionButton;
+    cancel: TradeActionButton;
+};
+
+const DEFAULT_TRADE_RATIOS = [0, 4, 4, 4, 4, 4, 4, 4, 4];
+
 function relayoutEditorWindows() {
     if (
         !offerWindow?.container ||
         !askWindow?.container ||
         !possibleAskWindow?.container ||
-        !offerYesNoWindow?.container
+        !tradeActionRail?.container
     ) {
         return;
     }
@@ -44,7 +62,7 @@ function relayoutEditorWindows() {
         offerWindow.container.destroyed ||
         askWindow.container.destroyed ||
         possibleAskWindow.container.destroyed ||
-        offerYesNoWindow.container.destroyed
+        tradeActionRail.container.destroyed
     ) {
         return;
     }
@@ -55,26 +73,24 @@ function relayoutEditorWindows() {
         canvasHeight: canvas.getHeight(),
         handHeight,
     });
-    const handWidth = computeHandWidth(canvas.getWidth());
     const actionBarPos = computeActionBarPosition({
         canvasWidth: canvas.getWidth(),
         canvasHeight: canvas.getHeight(),
     });
+    const laneWidth = Math.max(
+        offerWindow.container.width,
+        askWindow.container.width,
+        possibleAskWindow.container.width,
+    );
     const editorX = handPos.x;
-    const actionRailWidth = 48;
+    const actionRailWidth = tradeActionRail.width;
     const resolvedX = clampSpanWithinBounds({
         preferredX: editorX,
         minX: handPos.x,
         maxX: actionBarPos.x,
-        spanWidth:
-            tradeEditor.offerWidth +
-            tradeEditor.actionRailGap +
-            actionRailWidth,
+        spanWidth: laneWidth + tradeEditor.actionRailGap + actionRailWidth,
     });
-    const offerY =
-        handPos.y -
-        tradeEditor.windowHeight -
-        tradeEditor.rowGap;
+    const offerY = handPos.y - tradeEditor.windowHeight - tradeEditor.rowGap;
 
     offerWindow.container.x = resolvedX;
     offerWindow.container.y = offerY;
@@ -87,18 +103,23 @@ function relayoutEditorWindows() {
     possibleAskWindow.container.y =
         askWindow.container.y - tradeEditor.windowHeight - tradeEditor.rowGap;
 
-    offerYesNoWindow.container.x =
-        resolvedX + tradeEditor.offerWidth + tradeEditor.actionRailGap;
-    offerYesNoWindow.container.y = askWindow.container.y;
+    tradeActionRail.container.x = resolvedX + laneWidth + tradeEditor.actionRailGap;
+    tradeActionRail.container.y = possibleAskWindow.container.y;
 }
 
 function decorateTradeEditorWindow(
     tradeWindow: hand.HandWindow,
-    icon: assets.AssetImage,
-    secondaryIcon?: assets.AssetImage,
+    options?: {
+        icon?: assets.AssetImage;
+        secondaryIcon?: assets.AssetImage;
+        iconTint?: number;
+        iconRotation?: number;
+        secondaryRotation?: number;
+    },
 ) {
     const editor = getTradeConfig().editor;
-    tradeWindow.contentInsetLeft = editor.contentInsetLeft;
+    const hasRailIcon = Boolean(options?.icon);
+    tradeWindow.contentInsetLeft = hasRailIcon ? editor.contentInsetLeft : 10;
 
     const defaultBg = tradeWindow.container.children[0];
     if (defaultBg) {
@@ -117,83 +138,160 @@ function decorateTradeEditorWindow(
             height: editor.windowHeight,
         }),
     );
-    chrome.addChild(
-        createDockSideRail({
-            width: editor.railWidth,
-            height: editor.windowHeight,
-        }),
-    );
+    if (hasRailIcon) {
+        chrome.addChild(
+            createDockSideRail({
+                width: editor.railWidth,
+                height: editor.windowHeight,
+            }),
+        );
+    }
 
-    const addIcon = (asset: assets.AssetImage, centerY: number) => {
-        addIconSprite(chrome, {
+    const addIcon = (
+        asset: assets.AssetImage,
+        centerY: number,
+        rotation = 0,
+        tint?: number,
+    ) => {
+        const iconSprite = addIconSprite(chrome, {
             asset,
             width: editor.iconSize,
             height: editor.iconSize,
             x: (editor.railWidth - editor.iconSize) / 2,
             y: centerY - editor.iconSize / 2,
         });
+        iconSprite.anchor.set(0.5);
+        iconSprite.x += editor.iconSize / 2;
+        iconSprite.y += editor.iconSize / 2;
+        iconSprite.rotation = rotation;
+        if (tint !== undefined) {
+            iconSprite.tint = tint;
+        }
     };
 
-    if (secondaryIcon) {
-        addIcon(icon, editor.windowHeight / 2 - editor.iconSize * 0.45);
+    if (options?.icon && options.secondaryIcon) {
         addIcon(
-            secondaryIcon,
-            editor.windowHeight / 2 + editor.iconSize * 0.55,
+            options.icon,
+            editor.windowHeight / 2 - editor.iconSize * 0.45,
+            0,
+            options.iconTint,
         );
-    } else {
-        addIcon(icon, editor.windowHeight / 2);
+        addIcon(
+            options.secondaryIcon,
+            editor.windowHeight / 2 + editor.iconSize * 0.55,
+            options.secondaryRotation ?? 0,
+        );
+    } else if (options?.icon) {
+        addIcon(
+            options.icon,
+            editor.windowHeight / 2,
+            options.iconRotation ?? 0,
+            options.iconTint,
+        );
     }
 
     tradeWindow.container.addChildAt(chrome, 0);
 }
 
-function decorateTradeActionRail(window: YesNoWindow) {
+function makeTradeActionButton(options: {
+    icon: assets.AssetImage;
+    y: number;
+    fill: number;
+    onPress: () => void;
+}) {
+    const button = new PIXI.Container();
+    button.x = 6;
+    button.y = options.y;
+    button.interactive = true;
+    button.cursor = "pointer";
+
+    const chip = new PIXI.Graphics();
+    chip.beginFill(options.fill);
+    chip.drawRoundedRect(0, 0, 44, 44, 12);
+    chip.endFill();
+    button.addChild(chip);
+
+    addIconSprite(button, {
+        asset: options.icon,
+        width: 24,
+        height: 24,
+        x: 10,
+        y: 10,
+    });
+
+    let enabled = true;
+    button.on("pointerdown", () => {
+        if (!enabled) {
+            return;
+        }
+        options.onPress();
+    });
+
+    return {
+        container: button,
+        setEnabled(next: boolean) {
+            enabled = next;
+            button.alpha = next ? 1 : 0.45;
+            button.interactive = next;
+            button.cursor = next ? "pointer" : "default";
+        },
+    } satisfies TradeActionButton;
+}
+
+function createTradeActionRail() {
     const editor = getTradeConfig().editor;
-    const defaultBg = window.container.children[0];
-    if (defaultBg) {
-        defaultBg.visible = false;
-    }
-
-    window.container.children
-        .filter((child) => child.name === "trade-editor-action-rail")
-        .forEach((child) => window.container.removeChild(child));
-
-    window._yesButton!.alpha = 0.001;
-    window._noButton!.alpha = 0.001;
-
-    const chrome = new PIXI.Container();
-    chrome.name = "trade-editor-action-rail";
-    chrome.addChild(
+    const slotSize = 44;
+    const railHeight = slotSize * 3 + editor.rowGap * 2 + 12;
+    const rail = new PIXI.Container();
+    rail.zIndex = 1400;
+    rail.addChild(
         createDockRail({
-            width: 48,
-            height: editor.windowHeight,
+            width: 56,
+            height: railHeight,
         }),
     );
+    [0, 1, 2].forEach((index) => {
+        rail.addChild(
+            createDockSlot({
+                x: 6,
+                y: 6 + index * (slotSize + editor.rowGap),
+                width: slotSize,
+                height: slotSize,
+            }),
+        );
+    });
 
-    const makeActionChip = (
-        asset: assets.AssetImage,
-        centerY: number,
-        fill: number,
-    ) => {
-        const chip = new PIXI.Graphics();
-        chip.beginFill(fill);
-        chip.drawRoundedRect(6, centerY - 19, 36, 36, 12);
-        chip.endFill();
-        chrome.addChild(chip);
+    const bank = makeTradeActionButton({
+        icon: assets.uiKit.bank,
+        y: 6,
+        fill: 0x8ddf8e,
+        onPress: () => makeOffer("bank"),
+    });
+    const player = makeTradeActionButton({
+        icon: assets.uiKit.players,
+        y: 6 + slotSize + editor.rowGap,
+        fill: 0x8fd6eb,
+        onPress: () => makeOffer("player"),
+    });
+    const cancel = makeTradeActionButton({
+        icon: assets.uiKit.x,
+        y: 6 + 2 * (slotSize + editor.rowGap),
+        fill: 0x31bed4,
+        onPress: clearOfferEditor,
+    });
 
-        addIconSprite(chrome, {
-            asset,
-            width: 22,
-            height: 22,
-            x: 13,
-            y: centerY - 11,
-        });
-    };
+    rail.addChild(bank.container);
+    rail.addChild(player.container);
+    rail.addChild(cancel.container);
 
-    makeActionChip(assets.uiKit.tradeArrowGreen, 24, 0x5ad469);
-    makeActionChip(assets.uiKit.x, 66, 0x17b6cf);
-
-    window.container.addChildAt(chrome, 0);
+    return {
+        container: rail,
+        width: 56,
+        height: railHeight,
+        bank,
+        player,
+        cancel,
+    } satisfies TradeActionRail;
 }
 
 /** Currently available trade offers */
@@ -202,6 +300,7 @@ let currentOffers: OfferObject[] = [];
 /** Allow player to create new offers */
 let tradeAllowed = false;
 let countering = false;
+let currentTradeRatios: number[] = [...DEFAULT_TRADE_RATIOS];
 
 /** Window to show which cards the player wants to give */
 let offerWindow: hand.HandWindow;
@@ -210,8 +309,7 @@ let askWindow: hand.HandWindow;
 /** Window to select cards to ask */
 let possibleAskWindow: hand.HandWindow;
 
-/** Window to yes/no to current offer */
-let offerYesNoWindow: YesNoWindow;
+let tradeActionRail: TradeActionRail;
 
 export let handlingSelectCardsAction:
     | (tsg.PlayerActionSelectCards & { updateCount?: () => void })
@@ -271,17 +369,15 @@ export function initialize() {
         false,
     );
 
-    decorateTradeEditorWindow(
-        possibleAskWindow,
-        assets.uiKit.players,
-        assets.uiKit.tradeArrowGreen,
-    );
-    decorateTradeEditorWindow(
-        askWindow,
-        assets.uiKit.bank,
-        assets.uiKit.tradeArrowRed,
-    );
-    decorateTradeEditorWindow(offerWindow, assets.uiKit.bank);
+    decorateTradeEditorWindow(possibleAskWindow);
+    decorateTradeEditorWindow(askWindow, {
+        icon: assets.uiKit.tradeArrowGreen,
+        iconRotation: -Math.PI / 2,
+    });
+    decorateTradeEditorWindow(offerWindow, {
+        icon: assets.uiKit.tradeArrowRed,
+        iconRotation: -Math.PI / 2,
+    });
 
     offerWindow.container.visible = false;
     offerWindow.clickCallback = removeFromCurrentOffer;
@@ -301,18 +397,12 @@ export function initialize() {
     possibleAskWindow.noRatioStride = true;
     possibleAskWindow.interactive = true;
 
-    offerYesNoWindow = new YesNoWindow(
-        0,
-        0,
-    )
-        .onYes(makeOffer)
-        .onNo(clearOfferEditor)
-        .render();
-    decorateTradeActionRail(offerYesNoWindow);
-    offerYesNoWindow.container.visible = false;
-    offerYesNoWindow.container.zIndex = 1400;
-    offerYesNoWindow._yesButton!.reactDisable = true;
-    canvas.app.stage.addChild(offerYesNoWindow.container);
+    if (tradeActionRail?.container && !tradeActionRail.container.destroyed) {
+        tradeActionRail.container.destroy({ children: true });
+    }
+    tradeActionRail = createTradeActionRail();
+    tradeActionRail.container.visible = false;
+    canvas.app.stage.addChild(tradeActionRail.container);
     relayoutEditorWindows();
 }
 
@@ -324,7 +414,7 @@ export function relayout() {
 /**
  * Send a new offer to the server
  */
-export function makeOffer() {
+export function makeOffer(mode: TradeSubmitMode = "auto") {
     canvas.app.markDirty();
 
     if (handlingSelectCardsAction) {
@@ -337,7 +427,54 @@ export function makeOffer() {
         return;
     }
 
-    getCommandHub().createTradeOffer(offerWindow.cards, askWindow.cards);
+    getCommandHub().createTradeOffer(offerWindow.cards, askWindow.cards, mode);
+}
+
+function hasAnyCards(cards: number[]) {
+    return cards.some((q) => Number(q || 0) > 0);
+}
+
+function isDraftValidForBankTrade() {
+    const give = offerWindow.cards;
+    const ask = askWindow.cards;
+
+    let givesAny = false;
+    let asksAny = false;
+    let possibleBankCards = 0;
+    let requestedCards = 0;
+
+    for (let i = 1; i < Math.max(give.length, ask.length); i++) {
+        const giveQty = Number(give[i] || 0);
+        const askQty = Number(ask[i] || 0);
+        if (giveQty > 0) {
+            givesAny = true;
+        }
+        if (askQty > 0) {
+            asksAny = true;
+        }
+
+        if (giveQty > 0 && askQty > 0) {
+            return false;
+        }
+
+        if (giveQty > 0) {
+            const ratio = Number(currentTradeRatios[i] || 0);
+            if (ratio <= 0 || giveQty % ratio !== 0) {
+                return false;
+            }
+            possibleBankCards += giveQty / ratio;
+        }
+
+        if (askQty > 0) {
+            requestedCards += askQty;
+        }
+    }
+
+    if (!givesAny || !asksAny) {
+        return false;
+    }
+
+    return possibleBankCards === requestedCards;
 }
 
 /**
@@ -448,7 +585,7 @@ function render() {
         !offerWindow?.container ||
         !askWindow?.container ||
         !possibleAskWindow?.container ||
-        !offerYesNoWindow?.container
+        !tradeActionRail?.container
     ) {
         return;
     }
@@ -464,17 +601,19 @@ function render() {
             nsh || Boolean(handlingSelectCardsAction?.Getting);
         possibleAskWindow.container.visible = nsh;
 
-        offerYesNoWindow.container.visible = true;
-        offerYesNoWindow.noEnabled = false;
+        tradeActionRail.container.visible = true;
+        tradeActionRail.bank.setEnabled(false);
+        tradeActionRail.cancel.setEnabled(false);
 
         handlingSelectCardsAction?.updateCount?.();
 
         const w = handlingSelectCardsAction.NotSelfHand
             ? askWindow
             : offerWindow;
-        offerYesNoWindow.yesEnabled =
+        const playerEnabled =
             w.cardCount() + w.devCardCount() ==
             handlingSelectCardsAction.Quantity;
+        tradeActionRail.player.setEnabled(playerEnabled);
         return;
     }
 
@@ -482,15 +621,20 @@ function render() {
         offerWindow.container.visible = false;
         askWindow.container.visible = false;
         possibleAskWindow.container.visible = false;
-        offerYesNoWindow.container.visible = false;
+        tradeActionRail.container.visible = false;
         return;
     }
 
     offerWindow.container.visible = true;
     askWindow.container.visible = true;
     possibleAskWindow.container.visible = true;
-    offerYesNoWindow.container.visible = true;
-    offerYesNoWindow.yesEnabled = askWindow.cardCount() > 0;
+    tradeActionRail.container.visible = true;
+    const hasAsk = hasAnyCards(askWindow.cards);
+    const hasGive = hasAnyCards(offerWindow.cards);
+    const isPlayerTradeValid = hasAsk && hasGive;
+    tradeActionRail.bank.setEnabled(isPlayerTradeValid && isDraftValidForBankTrade());
+    tradeActionRail.player.setEnabled(isPlayerTradeValid);
+    tradeActionRail.cancel.setEnabled(true);
 }
 
 /**
@@ -778,10 +922,7 @@ export function closeTradeOffer() {
 
     offerWindow?.showRatios();
 
-    if (offerYesNoWindow) {
-        offerYesNoWindow.noEnabled = true;
-        countering = false;
-    }
+    countering = false;
 
     currentOffers.forEach((c) => c.container.destroy({ children: true }));
     currentOffers = [];
@@ -841,6 +982,13 @@ export function handleSelectCardsAction(action: tsg.PlayerAction) {
 }
 
 export function updateTradeRatios(ratios: number[]) {
+    currentTradeRatios = [...DEFAULT_TRADE_RATIOS];
+    ratios?.forEach((value, index) => {
+        if (index >= 0 && index < currentTradeRatios.length) {
+            currentTradeRatios[index] = Number(value || 0);
+        }
+    });
     possibleAskWindow?.setRatios(ratios);
     offerWindow?.setRatios(ratios);
+    render();
 }

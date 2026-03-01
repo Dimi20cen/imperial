@@ -1527,7 +1527,7 @@ func (g *Game) GetTradeOfferMessage(offer *entities.TradeOffer) *entities.Messag
 	}
 }
 
-func (g *Game) CreateOffer(player *entities.Player, offerDetails *entities.TradeOfferDetails) (*entities.TradeOffer, error) {
+func (g *Game) CreateOffer(player *entities.Player, offerDetails *entities.TradeOfferDetails, tradeMode string) (*entities.TradeOffer, error) {
 	if g.HasPlayerPendingAction() {
 		return nil, errors.New("wait for player to finish action")
 	}
@@ -1580,10 +1580,19 @@ func (g *Game) CreateOffer(player *entities.Player, offerDetails *entities.Trade
 	offerId := g.OfferCounter
 
 	if player == g.CurrentPlayer {
-		// New offer from current player
-		if err := g.CanTradeWithBank(player, offerDetails); err == nil {
+		// New offer from current player.
+		switch tradeMode {
+		case "bank":
+			if err := g.CanTradeWithBank(player, offerDetails); err != nil {
+				return nil, err
+			}
 			player.SendAction(&entities.PlayerAction{Type: entities.PlayerActionTypeSelectCardsDone})
 			return nil, g.TradeWithBank(player, offerDetails)
+		case "auto", "":
+			if err := g.CanTradeWithBank(player, offerDetails); err == nil {
+				player.SendAction(&entities.PlayerAction{Type: entities.PlayerActionTypeSelectCardsDone})
+				return nil, g.TradeWithBank(player, offerDetails)
+			}
 		}
 	} else {
 		// Counter offer

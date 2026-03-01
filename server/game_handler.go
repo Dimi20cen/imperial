@@ -76,13 +76,23 @@ func (ws *WsClient) handleTradeCommand(msg map[string]interface{}) {
 			ws.Hub.Game.SendError(errors.New("failed to decode offer details"), ws.Player)
 			return
 		}
+		tradeMode := "auto"
+		if rawMode, ok := msg["trm"]; ok {
+			var decodedMode string
+			if decodeErr := mapstructure.Decode(rawMode, &decodedMode); decodeErr == nil {
+				switch decodedMode {
+				case "auto", "bank", "player":
+					tradeMode = decodedMode
+				}
+			}
+		}
 
 		if len(offerDetails.Ask) != 9 || len(offerDetails.Give) != 9 {
 			ws.Hub.Game.SendError(errors.New("wrong length of offer"), ws.Player)
 			return
 		}
 
-		_, err = ws.Hub.Game.CreateOffer(ws.Player, &offerDetails)
+		_, err = ws.Hub.Game.CreateOffer(ws.Player, &offerDetails, tradeMode)
 		if err != nil {
 			ws.Hub.Game.SendError(err, ws.Player)
 			return

@@ -101,6 +101,7 @@ Backend `JWTMiddleware` supports reading token from query when upgrading websock
 
 Messages are msgpack-encoded and parsed by `ui/src/sock.ts` types + adapter layer.
 Game command `pg` toggles manual pause/resume (server-authoritative).
+Trade create-offer messages can optionally include a trade mode hint (`trm`): `auto` (legacy behavior), `bank` (force bank validation/execution), or `player` (force co-player offer flow).
 
 Inbound game messages are handled by `ui/src/store/gameRuntime.ts` (with Pixi rendering side-effects). `ui/src/ws.ts` is now a compatibility module for command hub/player context ownership.
 

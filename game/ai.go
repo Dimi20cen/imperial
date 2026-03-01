@@ -1,10 +1,10 @@
 package game
 
 import (
-	"sakura/entities"
 	"log"
 	"math"
 	"math/rand"
+	"sakura/entities"
 )
 
 type AI struct {
@@ -437,7 +437,7 @@ func (ai *AI) tickPlayer(p *entities.Player) bool {
 			// remove oid-th element from currentOffers
 			currentOffers = append(currentOffers[:oid], currentOffers[oid+1:]...)
 
-			_, err := ai.g.CreateOffer(p, offer)
+			_, err := ai.g.CreateOffer(p, offer, "auto")
 			if err != nil {
 				log.Println("Error creating offer:", err)
 			} else {
