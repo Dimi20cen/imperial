@@ -160,3 +160,38 @@ Optional backend watcher:
 ```bash
 nodemon --signal SIGINT -e go --exec "go run --race cmd/server/main.go"
 ```
+
+## One-command Mode Scripts
+
+From repo root:
+
+```bash
+./scripts/dev.sh
+```
+
+Starts MongoDB + backend (`go run`) + frontend (`next dev`) for development.
+
+```bash
+./scripts/prod.sh
+```
+
+Starts MongoDB + backend + production frontend (`next build` then `next start`).
+
+Optional: skip UI rebuild when you already built it:
+
+```bash
+SKIP_BUILD=1 ./scripts/prod.sh
+```
+
+Optional: stop MongoDB on script exit too:
+
+```bash
+STOP_DB_ON_EXIT=1 ./scripts/dev.sh
+STOP_DB_ON_EXIT=1 ./scripts/prod.sh
+```
+
+Notes:
+
+- Press `Ctrl+C` stops backend + UI.
+- By default MongoDB stays running in Docker; use `STOP_DB_ON_EXIT=1` to stop it too.
+- MongoDB can be stopped separately with `docker compose down`.

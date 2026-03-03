@@ -820,7 +820,7 @@ export function showTradeOffer(offer: tsg.TradeOffer) {
     canvas.app.markDirty();
 
     // Get current container or make new and push to current list
-    let offerContainer!: PIXI.Container | undefined;
+    let offerContainer!: PIXI.Container;
     let offerObject!: OfferObject;
     let isNewOffer = true;
     for (const c of currentOffers) {
@@ -831,11 +831,12 @@ export function showTradeOffer(offer: tsg.TradeOffer) {
         }
     }
 
-    if (!offerContainer) {
+    if (!offerContainer || !offerObject) {
         offerContainer = new PIXI.Container();
-        offerObject = offer as any;
-        offerObject.container = offerContainer;
-        currentOffers.push(offerObject);
+        const createdOffer = offer as OfferObject;
+        createdOffer.container = offerContainer;
+        offerObject = createdOffer;
+        currentOffers.push(createdOffer);
     }
 
     const index = currentOffers.indexOf(offerObject);
@@ -1154,7 +1155,7 @@ export function showTradeOffer(offer: tsg.TradeOffer) {
             const chip = createOfferStatusChip(playerOrder, status);
             chip.x = actionsX + 2 + idx * 48;
             chip.y = actionBaseY + 7;
-            const name = state.lastKnownStates?.[playerOrder]?.Name || `Player ${playerOrder + 1}`;
+            const name = state.lastKnownStates?.[playerOrder]?.Username || `Player ${playerOrder + 1}`;
             const statusText =
                 status > 0 ? "accepted" : status < 0 ? "declined" : "pending";
             new windows.TooltipHandler(chip, `${name}: ${statusText}`);
